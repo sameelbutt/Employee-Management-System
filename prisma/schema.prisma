@@ -1,0 +1,230 @@
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+//Roles
+enum Role {
+  Admin
+  HR
+  Manager
+  Lead
+  Employee
+  Accounts
+}
+enum LeaveType {
+  SICK_LEAVE
+  ANNUAL_LEAVE
+  CASUAL_LEAVE
+}
+
+// Employee Model
+model Employee {
+  id                Int           @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  email             String        @unique
+  phoneNumber       String?
+  address           String
+  hireDate          DateTime
+  status            String   
+  department        Department    @relation(fields: [departmentId], references: [id])
+  departmentId      Int
+  position          Position      @relation(fields: [positionId], references: [id])
+  positionId        Int
+  salary            Float
+  password     String
+  bankAccount       String    
+  performance       Performance[]
+  training          Training[]
+  leave             Leave[]
+  wellness          Wellness[]
+  benefits          Benefits[]
+  payroll           Payroll[]
+  selfService       EmployeeSelfService?
+  onboarding        Onboarding[] 
+  workforceManagement WorkforceManagement[] 
+  attendance        Attendance[]  
+  talentManagement  TalentManagement[] 
+  successionPlan    SuccessionPlan[] 
+  approved           Boolean   @default(false)
+   role              Role          @default(Employee) // Default role is 'Employee'
+}
+//Department
+model Department {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique  
+  employees   Employee[]  
+  positions   Position[]  
+  recruitments Recruitment[] 
+  hrAnalytics HRAnalytics[] 
+}
+
+
+// Position Model
+model Position {
+  id            Int         @id @default(autoincrement())
+  name          String      @unique  // Make name unique
+  department    Department  @relation(fields: [departmentId], references: [id])
+  departmentId  Int
+  employees     Employee[]
+}
+
+// Recruitment Model
+model Recruitment {
+  id              Int             @id @default(autoincrement())
+  title           String
+  description     String
+  department      Department      @relation(fields: [departmentId], references: [id])
+  departmentId    Int
+  jobApplications JobApplication[]
+}
+
+model JobApplication {
+  id              Int           @id @default(autoincrement())
+  candidateName   String
+  candidateEmail  String
+  resumeUrl       String
+  status          String       
+  recruitmentId   Int
+  recruitment     Recruitment   @relation(fields: [recruitmentId], references: [id])
+}
+
+// Onboarding Model
+model Onboarding {
+  id              Int           @id @default(autoincrement())
+  employeeId      Int
+  employee        Employee      @relation(fields: [employeeId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  tasks           String        
+}
+
+// Performance Model
+model Performance {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+  evaluationDate DateTime
+  score          Int
+  feedback       String
+}
+
+// Benefits Model
+model Benefits {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  benefitType String   
+  status      String    
+  startDate   DateTime
+  endDate     DateTime?
+}
+
+// Workforce Management Model
+model WorkforceManagement {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+  shiftStart     DateTime
+  shiftEnd       DateTime
+  status         String    
+}
+
+// Time and Attendance Model
+model Attendance {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  checkInTime   DateTime
+  checkOutTime  DateTime
+  status        String   
+}
+
+// Absence and Leave Management Model
+model Leave {
+id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  leaveType   LeaveType    
+  startDate   DateTime
+  endDate     DateTime
+   firstName   String
+  lastName    String
+  status      String     
+}
+
+// Learning and Development Model
+model Training {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  courseName  String
+  provider    String   
+  startDate   DateTime
+  endDate     DateTime
+  status      String    
+}
+
+// Talent Management Model
+model TalentManagement {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  skillSet    String
+  careerGoals String
+}
+
+// Succession Planning Model
+model SuccessionPlan {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  planDetails String
+  status      String   
+}
+
+// HR Analytics Model
+model HRAnalytics {
+  id               Int        @id @default(autoincrement())
+  departmentId     Int
+  department       Department @relation(fields: [departmentId], references: [id])
+  totalEmployees   Int
+  attritionRate    Float
+  satisfactionScore Float
+}
+
+// Payroll Model
+model Payroll {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  salary      Float
+  bonuses     Float
+  deductions  Float
+  netSalary   Float
+  payDate     DateTime
+  status      String    
+}
+
+// Wellness Model
+model Wellness {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  wellnessProgram String
+  status      String   
+}
+
+// Employee Self-Service Model
+model EmployeeSelfService {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int       @unique  // One-to-one relation needs unique constraint
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  dashboard   String   
+}
