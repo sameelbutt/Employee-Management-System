@@ -244,4 +244,192 @@ const updateLeaveStatus = async (req, res) => {
   }
 };
 
-module.exports = { createLeaveRequest, getAllLeaveRequests, updateLeaveStatus };
+const getLeaveReport = async (req, res) => {
+  try {
+    let { id: employeeId } = req.user;
+
+    let employee = await prisma.employee.findUnique({
+      where: {
+        id: employeeId,
+      },
+      include: {
+        leave: true,
+        position: true,
+        department: true,
+      },
+    });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    let leaveTaken = employee.leave.filter(
+      (l) => l.status.toLowerCase() === "accepted"
+    );
+    if(leaveTaken.length >3){
+
+      return res.status(404).json({ message: "Leave limit exceeded" });
+    }
+    let leaveBalance = employee.totalLeave - leaveTaken.length;
+    
+    
+    res.status(200).json({
+      leaveBalance: leaveBalance,
+      leaveTaken: leaveTaken.length,
+      leaveLeft: leaveBalance,
+      position: employee.position,
+      department: employee.department,
+      leaves: employee.leave,
+    });
+  } catch (error) {
+    console.error("Error fetching leave report:", error);
+    res.status(500).json({ message: "Error fetching leave report" });
+  }
+};
+const createSpecialLeaveRequest = async (req, res) => {
+  try {
+    const { leaveType, startDate, endDate, reason } = req.body;
+    const { id: employeeId } = req.user;
+
+    
+    if (!leaveType || !startDate || !endDate || !reason) {
+      return res.status(400).json({ message: "All fields are required for special leave" });
+    }
+
+    // Find the employee
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: { 
+        leave: true,
+        department: true 
+      }
+    });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+   
+    const acceptedLeaves = employee.leave.filter(
+      (l) => l.status.toLowerCase() === "accepted"
+    );
+
+    
+    if (acceptedLeaves.length < employee.totalLeave) {
+      return res.status(400).json({ 
+        message: "Special leave can only be requested after exhausting regular leaves" 
+      });
+    }
+
+    // Ensure leaveType is SPECIAL_LEAVE
+    if (leaveType !== "SPECIAL_LEAVE") {
+      return res.status(400).json({ 
+        message: "Leave type must be SPECIAL_LEAVE" 
+      });
+    }
+
+    // Check for existing special leave requests
+    const existingSpecialLeave = await prisma.leave.findFirst({
+      where: {
+        employeeId,
+        leaveType: "SPECIAL_LEAVE",
+        status: { not: "Rejected" }
+      }
+    });
+
+    if (existingSpecialLeave) {
+      return res.status(400).json({ 
+        message: "You already have a pending or accepted special leave request" 
+      });
+    }
+
+   
+    const specialLeave = await prisma.leave.create({
+      data: {
+        employeeId,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        leaveType: "SPECIAL_LEAVE",
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        status: "Pending",
+        specialLeaveReason: reason
+      }
+    });
+
+    res.status(201).json({
+      message: "Special leave request created successfully",
+      leave: specialLeave
+    });
+
+  } catch (error) {
+    console.error("Error creating special leave request:", error);
+    res.status(500).json({ message: "Error processing special leave request" });
+  }
+};
+const getSpecialLeaveRequests = async (req, res) => {
+  try {
+    const { role, id: userId } = req.user;
+
+   
+    if (role !== "Lead" && role !== "HR") {
+      return res.status(403).json({ message: "Unauthorized to view special leave requests" });
+    }
+
+    let specialLeaveRequests;
+
+    if (role === "Lead") {
+      
+      const lead = await prisma.employee.findUnique({
+        where: { id: userId },
+        include: { department: true }
+      });
+
+      specialLeaveRequests = await prisma.leave.findMany({
+        where: {
+          leaveType: "SPECIAL_LEAVE",
+          status: "Pending",
+          employee: {
+            departmentId: lead.department.id
+          }
+        },
+        include: {
+          employee: {
+            include: {
+              department: true,
+              position: true
+            }
+          }
+        }
+      });
+    } else {
+    
+      specialLeaveRequests = await prisma.leave.findMany({
+        where: {
+          leaveType: "SPECIAL_LEAVE",
+          status: "Pending"
+        },
+        include: {
+          employee: {
+            include: {
+              department: true,
+              position: true
+            }
+          }
+        }
+      });
+    }
+
+    if (specialLeaveRequests.length === 0) {
+      return res.status(404).json({ 
+        message: "No special leave requests found" 
+      });
+    }
+
+    res.status(200).json(specialLeaveRequests);
+  } catch (error) {
+    console.error("Error fetching special leave requests:", error);
+    res.status(500).json({ message: "Error retrieving special leave requests" });
+  }
+};
+module.exports = { createLeaveRequest, getAllLeaveRequests, updateLeaveStatus,getLeaveReport,createSpecialLeaveRequest,getSpecialLeaveRequests };

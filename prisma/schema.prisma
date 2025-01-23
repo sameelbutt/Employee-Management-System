@@ -21,6 +21,7 @@ enum LeaveType {
   SICK_LEAVE
   ANNUAL_LEAVE
   CASUAL_LEAVE
+    SPECIAL_LEAVE
 }
 
 // Employee Model
@@ -53,7 +54,8 @@ model Employee {
   talentManagement  TalentManagement[] 
   successionPlan    SuccessionPlan[] 
   approved           Boolean   @default(false)
-   role              Role          @default(Employee) // Default role is 'Employee'
+  role              Role          @default(Employee) // Default role is 'Employee'
+  totalLeave  Int     @default(3) 
 }
 //Department
 model Department {
@@ -157,6 +159,7 @@ id          Int       @id @default(autoincrement())
    firstName   String
   lastName    String
   status      String     
+  specialLeaveReason  String? 
 }
 
 // Learning and Development Model

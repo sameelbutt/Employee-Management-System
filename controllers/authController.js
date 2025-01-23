@@ -198,12 +198,12 @@ const getPendingApprovals = async (req, res) => {
   try {
     const { role } = req.user;
 
-    // Only allow Admin and HR to fetch this data
+    
     if (!["Admin", "HR"].includes(role)) {
       return res.status(403).json({ message: "Access denied." });
     }
 
-    // Fetch all employees where approval is pending
+   
     const pendingEmployees = await prisma.employee.findMany({
       where: { approved: false },
     });

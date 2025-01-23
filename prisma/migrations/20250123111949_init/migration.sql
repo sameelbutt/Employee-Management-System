@@ -21,6 +21,7 @@ CREATE TABLE "Employee" (
     "bankAccount" TEXT NOT NULL,
     "approved" BOOLEAN NOT NULL DEFAULT false,
     "role" "Role" NOT NULL DEFAULT 'Employee',
+    "totalLeave" INTEGER NOT NULL DEFAULT 3,
 
     CONSTRAINT "Employee_pkey" PRIMARY KEY ("id")
 );
