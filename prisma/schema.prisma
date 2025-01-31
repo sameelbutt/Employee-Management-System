@@ -21,7 +21,20 @@ enum LeaveType {
   SICK_LEAVE
   ANNUAL_LEAVE
   CASUAL_LEAVE
-    SPECIAL_LEAVE
+  SPECIAL_LEAVE
+}
+enum ExpenseType {
+  OPERATING_COST
+  EMPLOYEE_BENEFITS
+  OFFICE_RENT
+  UTILITIES
+  OTHER
+}
+enum EarningType {
+  PRODUCT_SALES
+  SERVICE_INCOME
+  INVESTMENT
+  OTHER
 }
 
 // Employee Model
@@ -57,24 +70,55 @@ model Employee {
   role              Role          @default(Employee) // Default role is 'Employee'
   totalLeave  Int     @default(3) 
 }
-//Department
+// Department Model
 model Department {
-  id          Int         @id @default(autoincrement())
-  name        String      @unique  
-  employees   Employee[]  
-  positions   Position[]  
-  recruitments Recruitment[] 
-  hrAnalytics HRAnalytics[] 
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  employees   Employee[]
+  positions   Position[]
+  recruitments Recruitment[]
+  hrAnalytics HRAnalytics[]
 }
-
 
 // Position Model
 model Position {
-  id            Int         @id @default(autoincrement())
-  name          String      @unique  // Make name unique
-  department    Department  @relation(fields: [departmentId], references: [id])
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  department    Department    @relation(fields: [departmentId], references: [id])
   departmentId  Int
   employees     Employee[]
+}
+// Earnings Model
+model Earnings {
+  id             Int           @id @default(autoincrement())
+  source         EarningSource @relation(fields: [sourceId], references: [id])
+  sourceId       Int
+  amount         Float
+  earningType    EarningType
+  date           DateTime
+  description    String?
+}
+model EarningSource {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  earnings    Earnings[]
+}
+// Expenses Model
+model Expenses {
+  id              Int             @id @default(autoincrement())
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  categoryId      Int
+  amount          Float
+  expenseType     ExpenseType
+  date            DateTime
+  description     String?
+}
+model ExpenseCategory {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  expenses    Expenses[]
 }
 
 // Recruitment Model
@@ -104,7 +148,7 @@ model Onboarding {
   employee        Employee      @relation(fields: [employeeId], references: [id])
   startDate       DateTime
   endDate         DateTime
-  tasks           String        
+  tasks            String[]         
 }
 
 // Performance Model
@@ -158,6 +202,7 @@ id          Int       @id @default(autoincrement())
   endDate     DateTime
    firstName   String
   lastName    String
+  
   status      String     
   specialLeaveReason  String? 
 }

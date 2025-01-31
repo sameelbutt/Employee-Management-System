@@ -5,24 +5,43 @@ const createOnboarding = async (req, res) => {
   const { employeeId, startDate, endDate, tasks } = req.body;
 
   try {
+    // Get lead's details (Assuming `req.user` contains the authenticated lead)
+    const lead = await prisma.employee.findUnique({
+      where: { id: req.user.id }, // Ensure authentication middleware adds `req.user`
+      include: { department: true, position: true },
+    });
+
+    if (!lead) {
+      return res.status(403).json({ error: "Unauthorized: Lead not found" });
+    }
+
+    // Get employee details
     const employee = await prisma.employee.findUnique({
       where: { id: parseInt(employeeId) },
-      include: {
-        department: true,
-        position: true,
-      },
+      include: { department: true, position: true },
     });
 
     if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
     }
 
+    // Ensure the employee is in the same department and position as the lead
+    if (
+      lead.department.id !== employee.department.id || // Different department
+      lead.position.id !== employee.position.id // Different position
+    ) {
+      return res.status(403).json({
+        error: "You can only assign tasks to employees in the same department and position.",
+      });
+    }
+
+    // Create multiple onboarding tasks
     const onboarding = await prisma.onboarding.create({
       data: {
         employeeId: parseInt(employeeId),
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        tasks,
+        tasks: tasks, // Store array directly
       },
     });
 
@@ -33,11 +52,15 @@ const createOnboarding = async (req, res) => {
   }
 };
 
+
+
+
 const getOnboardingByEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
 
-    const onboarding = await prisma.onboarding.findFirst({
+    // Get all onboarding records for the employee
+    const onboarding = await prisma.onboarding.findMany({
       where: { employeeId: parseInt(employeeId) },
       include: {
         employee: {
@@ -49,17 +72,19 @@ const getOnboardingByEmployee = async (req, res) => {
       },
     });
 
-    if (!onboarding) {
+    if (onboarding.length === 0) {
       return res
         .status(404)
         .json({ error: "Onboarding not found for this employee." });
     }
 
-    res.status(201).json(onboarding);
+    res.status(200).json(onboarding); 
   } catch (error) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
+
+
 
 const updateOnboarding = async (req, res) => {
   const { employeeId } = req.params;

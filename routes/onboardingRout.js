@@ -1,8 +1,10 @@
 const express = require("express");
 const onboardingRouter = express.Router();
 const onboardingController = require("../controllers/Onboarding");
-
-onboardingRouter.post("/create", onboardingController.createOnboarding);
+const authMiddleware = require("../middlewares/authMiddleware");
+const roleAuthorization = require("../middlewares/roleMiddleware");
+onboardingRouter.post("/create",authMiddleware,
+  roleAuthorization( "Lead"), onboardingController.createOnboarding);
 onboardingRouter.get(
   "/:employeeId",
   onboardingController.getOnboardingByEmployee

@@ -18,7 +18,7 @@ const getAllLeaveRequests = async (req, res) => {
           .json({ message: "You do not have access to leave requests." });
       }
 
-      // Fetch leave requests for employees in the same department
+    
       const leaveRequests = await prisma.leave.findMany({
         where: {
           employee: {
@@ -49,7 +49,7 @@ const getAllLeaveRequests = async (req, res) => {
     if (role === "HR") {
       const leaveRequests = await prisma.leave.findMany({
         where: {
-          status: "Accepted", // Show accepted requests to HR for final approval
+          status: { in: ["Accepted", "Rejected"] }, // Show accepted requests to HR for final approval
         },
         include: {
           employee: {
@@ -78,6 +78,8 @@ const getAllLeaveRequests = async (req, res) => {
   }
 };
 
+
+
 const createLeaveRequest = async (req, res) => {
   try {
     const { leaveType, startDate, endDate, firstName, lastName } = req.body;
@@ -103,6 +105,36 @@ const createLeaveRequest = async (req, res) => {
       return res.status(400).json({
         message: "Name does not match the employee record.",
       });
+    }
+
+    // Get the current month and year
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed in JavaScript
+    const currentYear = currentDate.getFullYear();
+
+    // Fetch all leave requests for the current month
+    const leaveRequestsThisMonth = await prisma.leave.findMany({
+      where: {
+        employeeId,
+        startDate: {
+          gte: new Date(`${currentYear}-${currentMonth}-01`), // Start of the month
+          lt: new Date(`${currentYear}-${currentMonth + 1}-01`), // Start of the next month
+        },
+      },
+    });
+
+    // Check if the employee has already taken 3 leaves this month
+    if (leaveRequestsThisMonth.length >= 3) {
+      return res.status(400).json({
+        message: "You have already used all 3 leaves this month. Use the Special Leave.",
+      });
+    }
+
+    // Check if the employee has exceeded their leave limit
+    if (employee.totalLeave <= 0) {
+      return res
+        .status(400)
+        .json({ message: "You have 0 limit of leave remaining. Use the Special Leave" });
     }
 
     // Check for overlapping leave requests
@@ -141,6 +173,12 @@ const createLeaveRequest = async (req, res) => {
       },
     });
 
+    // Decrement the employee's total leave count
+    await prisma.employee.update({
+      where: { id: employeeId },
+      data: { totalLeave: employee.totalLeave - 1 },
+    });
+
     // Notify HR and Lead
     const responseMessage = `Leave request created successfully for ${employee.firstName} ${employee.lastName}`;
     const notifications = [];
@@ -164,10 +202,12 @@ const createLeaveRequest = async (req, res) => {
   }
 };
 
+
+
 const updateLeaveStatus = async (req, res) => {
-  const { leaveId } = req.params; // Extract leave ID from the request parameters
-  const { status } = req.body; // Extract status from the request body
-  const { role } = req.user; // Extract user role from the authenticated user object
+  const { leaveId } = req.params; 
+  const { status } = req.body; 
+  const { role } = req.user; 
 
   try {
     // Find the leave request by ID
@@ -243,6 +283,7 @@ const updateLeaveStatus = async (req, res) => {
       .json({ message: "An error occurred while updating the leave status." });
   }
 };
+
 
 const getLeaveReport = async (req, res) => {
   try {
