@@ -7,8 +7,8 @@ const authenticateUser = require("../middlewares/authMiddleware");
 router.get(
   "/",
   authenticateUser,
-  roleAuthorization(["Admin", "HR"]),
-  userController.getAllUsers
+  roleAuthorization(["Admin", "HR","Lead"]),
+ userController.getEmployees
 );
 
 module.exports = router;

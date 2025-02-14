@@ -104,6 +104,7 @@ const login = async (req, res) => {
       token,
       employee: {
         id: employee.id,
+        name: `${employee.firstName} ${employee.lastName || ""}`.trim(), // Combine firstName and lastName
         email: employee.email,
         role: employee.role,
       },
@@ -113,6 +114,7 @@ const login = async (req, res) => {
     res.status(500).json({ message: "Error during login process." });
   }
 };
+
 
 const addEmployee = async (req, res) => {
   try {

@@ -5,8 +5,7 @@ const prisma = new PrismaClient();
 const getEarnings = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    console.log("Received startDate:", startDate);
-    console.log("Received endDate:", endDate);
+   
 
     const whereClause = {};
     if (startDate && endDate) {
