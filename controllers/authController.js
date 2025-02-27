@@ -139,6 +139,10 @@ const addEmployee = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+   
+    const isAutoApproved = req.user.role === "HR";
+    const status = isAutoApproved ? "ACTIVE" : "PENDING";
+
     const newEmployee = await UserModel.createEmployee({
       firstName,
       lastName,
@@ -152,7 +156,8 @@ const addEmployee = async (req, res) => {
       salary,
       role,
       hireDate: new Date(),
-      status: "ACTIVE",
+      status,
+      approved: isAutoApproved,
     });
 
     res.status(201).json({
@@ -161,6 +166,8 @@ const addEmployee = async (req, res) => {
         id: newEmployee.id,
         email: newEmployee.email,
         role: newEmployee.role,
+        status: newEmployee.status,
+        approved: newEmployee.approved,
       },
     });
   } catch (error) {
@@ -168,6 +175,7 @@ const addEmployee = async (req, res) => {
     res.status(500).json({ message: "Error adding employee." });
   }
 };
+
 
 const approveEmployee = async (req, res) => {
   try {

@@ -9,12 +9,13 @@ const onboardingRoutes = require("./routes/onboardingRout");
 const earningsRoutes = require("./routes/earningsRoutes");
 const earningSourceRoutes = require("./routes/earningSourceRoutes");
 const expensesRoutes = require("./routes/expensesRoutes");
+// const recruitmentRoutes = require('./routes/recruitmentRoutes');
 // const performanceRoutes = require("./routes/performanceRoutes");
 const kpiRoutes  = require("./routes/kpiRoutes");
 const app = express();
 
 app.use(cors());
-
+  
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,6 +29,7 @@ app.use("/api/finance/sources", earningSourceRoutes);
 app.use("/api/finance/earnings", earningsRoutes);
 app.use("/api/finance/expenses", expensesRoutes);
 app.use('/api/performance', kpiRoutes);
+// app.use('/api/recruitment', recruitmentRoutes);
 // app.use("/api", performanceRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to HRMS API" });

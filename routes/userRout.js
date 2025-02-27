@@ -7,7 +7,7 @@ const authenticateUser = require("../middlewares/authMiddleware");
 router.get(
   "/",
   authenticateUser,
-  roleAuthorization(["Admin", "HR","Lead"]),
+  roleAuthorization(["Admin", "HR"]),
  userController.getEmployees
 );
 

@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// Fetch employees with optional filtering by departmentId, positionId, and role
+// Backend: Update the getEmployees function in your controller
 const getEmployees = async (req, res) => {
   try {
     const { departmentId, positionId, role } = req.query;
@@ -19,7 +19,7 @@ const getEmployees = async (req, res) => {
       where.role = { in: rolesArray };
     }
 
-    // Fetch employees based on the filter
+    // Fetch employees with all required fields
     const employees = await prisma.employee.findMany({
       where,
       select: {
@@ -27,20 +27,19 @@ const getEmployees = async (req, res) => {
         firstName: true,
         lastName: true,
         email: true,
+        phoneNumber: true,
+        address: true,
+        hireDate: true,
+        status: true,
+        departmentId: true,
+        positionId: true,
+        salary: true,
         role: true,
+        bankAccount: true
       },
     });
 
-    // Combine firstName and lastName into a single name field
-    const formattedEmployees = employees.map((emp) => ({
-      id: emp.id,
-      name: `${emp.firstName} ${emp.lastName}`, // Combine first and last name
-      email: emp.email,
-      role: emp.role,
-    }));
-
-    // Return the filtered employees (empty array if no matches)
-    return res.status(200).json(formattedEmployees);
+    return res.status(200).json(employees);
   } catch (error) {
     console.error("Error in getEmployees:", error);
     return res.status(500).json({ error: "Error fetching employees" });

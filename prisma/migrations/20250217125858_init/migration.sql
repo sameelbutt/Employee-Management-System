@@ -2,7 +2,16 @@
 CREATE TYPE "Role" AS ENUM ('Admin', 'HR', 'Manager', 'Lead', 'Employee', 'Accounts');
 
 -- CreateEnum
-CREATE TYPE "LeaveType" AS ENUM ('SICK_LEAVE', 'ANNUAL_LEAVE', 'CASUAL_LEAVE');
+CREATE TYPE "LeaveType" AS ENUM ('SICK_LEAVE', 'ANNUAL_LEAVE', 'CASUAL_LEAVE', 'SPECIAL_LEAVE');
+
+-- CreateEnum
+CREATE TYPE "ExpenseType" AS ENUM ('OPERATING_COST', 'EMPLOYEE_BENEFITS', 'OFFICE_RENT', 'UTILITIES', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "EarningType" AS ENUM ('PRODUCT_SALES', 'SERVICE_INCOME', 'INVESTMENT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "EvaluationStatus" AS ENUM ('PENDING', 'SUPERVISOR_REVIEW', 'HR_REVIEW', 'COMPLETED');
 
 -- CreateTable
 CREATE TABLE "Employee" (
@@ -44,6 +53,48 @@ CREATE TABLE "Position" (
 );
 
 -- CreateTable
+CREATE TABLE "Earnings" (
+    "id" SERIAL NOT NULL,
+    "sourceId" INTEGER NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "earningType" "EarningType" NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "Earnings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EarningSource" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "EarningSource_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Expenses" (
+    "id" SERIAL NOT NULL,
+    "categoryId" INTEGER NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "expenseType" "ExpenseType" NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "Expenses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ExpenseCategory" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "ExpenseCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Recruitment" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
@@ -71,7 +122,7 @@ CREATE TABLE "Onboarding" (
     "employeeId" INTEGER NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
-    "tasks" TEXT NOT NULL,
+    "tasks" TEXT[],
 
     CONSTRAINT "Onboarding_pkey" PRIMARY KEY ("id")
 );
@@ -131,6 +182,7 @@ CREATE TABLE "Leave" (
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "status" TEXT NOT NULL,
+    "specialLeaveReason" TEXT,
 
     CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
 );
@@ -212,6 +264,71 @@ CREATE TABLE "EmployeeSelfService" (
     CONSTRAINT "EmployeeSelfService_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "KPITemplate" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isAutomatic" BOOLEAN NOT NULL DEFAULT false,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "KPITemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KPICriteria" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "weightage" DOUBLE PRECISION NOT NULL,
+    "templateId" INTEGER NOT NULL,
+
+    CONSTRAINT "KPICriteria_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PerformanceEvaluation" (
+    "id" SERIAL NOT NULL,
+    "employeeId" INTEGER NOT NULL,
+    "supervisorId" INTEGER NOT NULL,
+    "templateId" INTEGER NOT NULL,
+    "status" "EvaluationStatus" NOT NULL DEFAULT 'PENDING',
+    "hrComments" TEXT,
+    "supervisorComments" TEXT,
+    "finalScore" DOUBLE PRECISION,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PerformanceEvaluation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KPIEvaluation" (
+    "id" SERIAL NOT NULL,
+    "criteriaId" INTEGER NOT NULL,
+    "evaluationId" INTEGER NOT NULL,
+    "supervisorRating" DOUBLE PRECISION,
+    "hrRating" DOUBLE PRECISION,
+    "comments" TEXT,
+
+    CONSTRAINT "KPIEvaluation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvaluationNotification" (
+    "id" SERIAL NOT NULL,
+    "employeeId" INTEGER NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvaluationNotification_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Employee_email_key" ON "Employee"("email");
 
@@ -220,6 +337,12 @@ CREATE UNIQUE INDEX "Department_name_key" ON "Department"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Position_name_key" ON "Position"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EarningSource_name_key" ON "EarningSource"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ExpenseCategory_name_key" ON "ExpenseCategory"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmployeeSelfService_employeeId_key" ON "EmployeeSelfService"("employeeId");
@@ -232,6 +355,12 @@ ALTER TABLE "Employee" ADD CONSTRAINT "Employee_positionId_fkey" FOREIGN KEY ("p
 
 -- AddForeignKey
 ALTER TABLE "Position" ADD CONSTRAINT "Position_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Earnings" ADD CONSTRAINT "Earnings_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "EarningSource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Expenses" ADD CONSTRAINT "Expenses_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ExpenseCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Recruitment" ADD CONSTRAINT "Recruitment_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -277,3 +406,24 @@ ALTER TABLE "Wellness" ADD CONSTRAINT "Wellness_employeeId_fkey" FOREIGN KEY ("e
 
 -- AddForeignKey
 ALTER TABLE "EmployeeSelfService" ADD CONSTRAINT "EmployeeSelfService_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KPICriteria" ADD CONSTRAINT "KPICriteria_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "KPITemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PerformanceEvaluation" ADD CONSTRAINT "PerformanceEvaluation_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PerformanceEvaluation" ADD CONSTRAINT "PerformanceEvaluation_supervisorId_fkey" FOREIGN KEY ("supervisorId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PerformanceEvaluation" ADD CONSTRAINT "PerformanceEvaluation_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "KPITemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KPIEvaluation" ADD CONSTRAINT "KPIEvaluation_criteriaId_fkey" FOREIGN KEY ("criteriaId") REFERENCES "KPICriteria"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KPIEvaluation" ADD CONSTRAINT "KPIEvaluation_evaluationId_fkey" FOREIGN KEY ("evaluationId") REFERENCES "PerformanceEvaluation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvaluationNotification" ADD CONSTRAINT "EvaluationNotification_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

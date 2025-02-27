@@ -75,7 +75,6 @@ getPendingEvaluations: async (req, res) => {
         }
       }
     });
-
     return res.status(200).json(pendingEvaluations);
   } catch (error) {
     console.error("Error fetching pending evaluations:", error);
