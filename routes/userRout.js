@@ -11,4 +11,17 @@ router.get(
  userController.getEmployees
 );
 
+router.delete(
+  "/:userId/delete-employee",
+  authenticateUser,
+  userController.deleteEmployees
+);
+
+
+router.put(
+  "/:userId/update-employee",
+  authenticateUser,
+  userController.updateEmployees
+);
+
 module.exports = router;
